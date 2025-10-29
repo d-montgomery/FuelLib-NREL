@@ -356,7 +356,7 @@ class fuel:
         nu_i = np.exp(rhs)  # Viscosity in mm^2/s
 
         # Convert to SI (m^2/s)
-        nu_i *= 1e-6
+        nu_i = nu_i * 1e-6
 
         return nu_i
 
@@ -559,8 +559,8 @@ class fuel:
             Vm_stp = self.Vm_stp
         else:
             Tc = np.array([self.Tc[comp_idx]])
-            omega = self.omega[comp_idx]
-            Vm_stp = self.Vm_stp[comp_idx]
+            omega = np.array([self.omega[comp_idx]])
+            Vm_stp = np.array([self.Vm_stp[comp_idx]])
         phi = np.zeros_like(Tc)
         for i in range(len(Tc)):
             if T > Tc[i]:
@@ -654,7 +654,7 @@ class fuel:
             epsilonByKB_i = 1.15 * self.Tb  # K , Poling (11-4.3)
 
         # Compute binary sigma and epsilon
-        sigma_gas *= 1e10  # convert from m to Angstroms
+        sigma_gas = sigma_gas * 1e10  # convert from m to Angstroms
         sigmaAB_i = (sigma_gas + sigma_i) / 2  # Angstroms, Poling (11-3.5)
         epsilonAB_byKB_i = (
             epsilonByKB_gas * epsilonByKB_i
@@ -678,12 +678,12 @@ class fuel:
         )
 
         # Convert molecular weights from kg/mol to g/mol then calculate M_AB
-        MW_gas *= 1e3
+        MW_gas = MW_gas * 1e3
         MW_i = self.MW * 1e3
         M_AB_i = 2 * (MW_i * MW_gas) / (MW_i + MW_gas)  # g/mol, see Poling (11-3.1)
 
         # Convert pressure from Pa to bar
-        p *= 1e-5  # bar
+        p = p * 1e-5  # bar
 
         # Binary diffusion coefficients, Poling (11-4.1)
         D_AB_i = (
@@ -692,7 +692,7 @@ class fuel:
             * (T**1.5)
             / (p * M_AB_i**0.5 * sigmaAB_i**2 * omegaD_i)
         )  # cm^2/s
-        D_AB_i *= 1e-4  # Convert to m^2/s
+        D_AB_i = D_AB_i * 1e-4  # Convert to m^2/s
 
         return D_AB_i
 
@@ -723,7 +723,6 @@ class fuel:
             omega = np.array([self.omega[comp_idx]])
         Tr = T / Tc
         Pc = Pc * 1e-5  # convert from Pa to bar
-        Tc = Tc  # K
 
         if correlation.casefold() == "Brock-Bird".casefold():
             Tbr = Tb / Tc
@@ -738,7 +737,7 @@ class fuel:
 
         st = Pc ** (2.0 / 3.0) * Tc ** (1.0 / 3.0) * Q * (1 - Tr) ** (11.0 / 9.0)
 
-        st *= 1e-3  # Convert from dyn/cm to N/m
+        st = st * 1e-3  # Convert from dyn/cm to N/m
         if comp_idx is not None:
             st = st[0]
 
@@ -761,15 +760,12 @@ class fuel:
             MW = self.MW
             Tc = self.Tc
             Tb = self.Tb
-            Pc = self.Pc
             fam = self.fam
         else:
             MW = np.array([self.MW[comp_idx]])
             Tc = np.array([self.Tc[comp_idx]])
             Tb = np.array([self.Tb[comp_idx]])
-            Pc = np.array([self.Pc[comp_idx]])
             fam = np.array([self.fam[comp_idx]])
-        Pc *= 1e-5  # convert from Pa to bar
 
         Astar = 0.00350 + np.zeros_like(Tc)
         alpha = 1.2
