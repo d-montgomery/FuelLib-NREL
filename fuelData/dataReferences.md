@@ -18,10 +18,13 @@ GCxGC data for HEFA fuels produced from diﬀerent feedstocks (camelina, tallow,
 * gcData/hefa-mfat.csv
 * gcData/jet-a.csv
 
+## DLR Surrogates
+All fuels with the prefix `DLR_` are surrogates from [Kathrotia et al. Part III (2021)](https://doi.org/10.1016/j.fuel.2021.120737).
+
 # Group Decomposition Data
 
 ## POSF Fuels
-The decompositions of each compound into its functional groups for the POSF fuels originated from [Govindaraju & Ihme (2016)](https://doi.org/10.1016/j.ijheatmasstransfer.2016.06.079), but has been updated for additional accuracy:
+The decompositions of each compound into its functional groups for the POSF fuels originated from [Govindaraju & Ihme (2016)](https://doi.org/10.1016/j.ijheatmasstransfer.2016.06.079), but have been updated for additional accuracy:
 * groupDecompositionData/posf4658.csv
 * groupDecompositionData/posf10264.csv
 * groupDecompositionData/posf10289.csv
@@ -32,6 +35,10 @@ The decompositions of each compound into its functional groups for the POSF fuel
 The group decompositions of the HEFA and Jet-A from [Vozka et al. (2018)](https://doi.org/10.1021/acs.energyfuels.8b02787) have been derived from the `posf10325` decomposition:
 * groupDecompositionData/hefa.csv
 * groupDecompositionData/jet-a.csv
+
+## DLR Surrogates
+The group decomposition of each compound available for use with the DLR surrogates were done by David Montgomery in 2025. The surrogates are presented in [Kathrotia et al. Part III (2021)](https://doi.org/10.1016/j.fuel.2021.120737).
+* groupDecomposition/DLR_SurrogateCompounds.csv
 
 # Fuel Properties Data
 ## Single Component Fuels
@@ -48,5 +55,11 @@ The properties data for POSF fuels is from the AFRL [Edwards (2017)](https://doi
 * propertiesData/posf11498.csv
 
 ## HEFA:Jet-A Blends
-The properties data for the HEFA:Jet-A blends are from [Vozka et al. (2018)](https://doi.org/10.1021/acs.energyfuels.8b02787) 
+The properties data for the HEFA:Jet-A blends are from [Vozka et al. (2018)](https://doi.org/10.1021/acs.energyfuels.8b02787): 
 * propertiesData/hefa-jet-a-blends.csv
+
+## DLR Surrogates
+The density and viscosity properties data for the DLR surrogates are from [Kathrotia et al. Part III (2021)](https://doi.org/10.1016/j.fuel.2021.120737).
+* propertiesData/DLR_Surrogate.csv
+
+The individual compound data is from NIST webbook:
