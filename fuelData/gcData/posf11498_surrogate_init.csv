@@ -1,0 +1,12 @@
+﻿Compound,Reference Compound,PelePhysics Key,Weight %,Mole %,MW (g/mol)
+C3-Benzene,"1,2,4-­trimethylbenzene",C9H12,0,0,120.19
+C11-Isoparaffin,2-methyl decane,IC11H24,0,0,156.31
+C12-Isoparaffin,2-methyl undecane,IC12H26,82.80480876,86.49,170.33
+C13-Isoparaffin,2-methyl dodecane,IC13H28,0,0,184.36
+C16-Isoparaffin,2-methyl pentadecane,IC16H34,17.19519124,13.51,226.44
+n-C11,n-undecane,NC11H24,0,0,156.31
+n-C12,n-dodecane,NC12H26,0,0,170.33
+C10-Monocycloparaffin,butyl cyclohexane,MC10H20,0,0,140.27
+C11-Monocycloparaffin,pentyl cyclohexane,MC11H22,0,0,154.29
+C12-Monocycloparaffin,hexyl cyclohexane,MC12H24,0,0,168.32
+C13-Dicycloparaffin,methyl-dicyclohexane,DC13H24,0,0,180.33

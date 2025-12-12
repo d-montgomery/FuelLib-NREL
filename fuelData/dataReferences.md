@@ -11,6 +11,8 @@ The GCxGC data for the POSF fuels comes from the [National Jet Fuels Combustion 
 * gcData/posf10325_init.csv
 * gcData/posf11498_init.csv
 
+The surrogates for the POSF fuels are from the thermochemical surrogate compositions provided in [Standford's HyChem approach documentation](https://web.stanford.edu/group/haiwanglab/HyChem/approach/Report_Jet_Fuel_Thermochemical_Properties_v6.pdf)
+
 ## HEFA:Jet-A Blends
 GCxGC data for HEFA fuels produced from diﬀerent feedstocks (camelina, tallow, and mixed fat) courtesy of [Vozka et al. (2018)](https://doi.org/10.1021/acs.energyfuels.8b02787). Note that these can be blended with Jet-A to reproduce the density and viscosity measurement data from that paper:
 * gcData/hefa-came.csv
@@ -27,6 +29,8 @@ The decompositions of each compound into its functional groups for the POSF fuel
 * groupDecompositionData/posf10289.csv
 * groupDecompositionData/posf10325.csv
 * groupDecompositionData/posf11498.csv
+
+The decompositions for the posf surrogates are a subset of the tables listed above.
 
 ## HEFA:Jet-A Blends
 The group decompositions of the HEFA and Jet-A from [Vozka et al. (2018)](https://doi.org/10.1021/acs.energyfuels.8b02787) have been derived from the `posf10325` decomposition:
