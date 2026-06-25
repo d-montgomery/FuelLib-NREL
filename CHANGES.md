@@ -1,5 +1,3 @@
-This PR makes several improvements to the FuelLib project's installation, documentation, and CI workflows. The main changes include updating installation instructions and documentation to reflect new CLI tools and development workflows, switching CI and documentation builds to use editable/development installs, and modernizing the command-line exporter interface. Additionally, a new publishing guide has been added, and Sphinx documentation references and paths have been updated for consistency.
-
 ## Major Changes
 
 ### Module Organization & Architecture
