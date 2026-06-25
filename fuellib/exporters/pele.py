@@ -5,6 +5,8 @@ import subprocess
 from datetime import datetime
 from scipy import stats as st
 import fuellib as fl
+import json
+import urllib.request
 
 # Default data directory - use fuellib's embedded data
 FUELDATA_DIR = fl.get_fueldata_dir()
@@ -71,30 +73,89 @@ class UnitConverter:
 
 def get_git_info():
     """
-    Get git commit hash and remote URL for file header.
+    Get git commit hash and remote URL for FuelLib (with fallbacks).
+
+    The commit is read from the FuelLib git repo when available; otherwise the
+    installed package version is returned. The remote URL falls back to package
+    metadata when git is unavailable.
 
     :return: Tuple containing git commit hash and remote URL.
     :rtype: tuple[str, str]
     """
+    # Get the directory where FuelLib is installed
+    fuellib_dir = os.path.dirname(os.path.dirname(os.path.abspath(fl.__file__)))
+
     try:
         git_commit = (
-            subprocess.check_output(["git", "rev-parse", "HEAD"])
+            subprocess.check_output(
+                ["git", "-C", fuellib_dir, "rev-parse", "HEAD"],
+                stderr=subprocess.DEVNULL,
+            )
             .strip()
             .decode("utf-8")
         )
     except Exception:
-        git_commit = "N/A"
+        # Fall back to package version
+        try:
+            git_commit = fl.__version__
+        except Exception:
+            git_commit = "N/A"
 
     try:
         git_remote = (
-            subprocess.check_output(["git", "config", "--get", "remote.origin.url"])
+            subprocess.check_output(
+                ["git", "-C", fuellib_dir, "config", "--get", "remote.origin.url"],
+                stderr=subprocess.DEVNULL,
+            )
             .strip()
             .decode("utf-8")
         )
     except Exception:
-        git_remote = "N/A"
+        # Try to get repository URL from PyPI metadata
+        git_remote = _get_pypi_repo_url()
 
     return git_commit, git_remote
+
+
+def _get_pypi_repo_url():
+    """
+    Get the repository URL from PyPI package metadata.
+
+    :return: Repository URL or PyPI package URL as fallback.
+    :rtype: str
+    """
+    try:
+        version = fl.__version__
+        pypi_api_url = f"https://pypi.org/pypi/fuellib/{version}/json"
+
+        with urllib.request.urlopen(pypi_api_url, timeout=5) as response:
+            data = json.loads(response.read().decode("utf-8"))
+
+            # Try to get repository URL from project URLs
+            if "info" in data and "project_urls" in data["info"]:
+                project_urls = data["info"]["project_urls"]
+                if project_urls:
+                    # Look for common repository URL keys
+                    for key in ["Repository", "Homepage", "Source Code", "Code"]:
+                        if key in project_urls:
+                            return project_urls[key]
+
+            # Fallback to home page
+            if (
+                "info" in data
+                and "home_page" in data["info"]
+                and data["info"]["home_page"]
+            ):
+                return data["info"]["home_page"]
+    except Exception:
+        pass
+
+    # Final fallback: PyPI package URL
+    try:
+        version = fl.__version__
+        return f"https://pypi.org/project/fuellib/{version}/"
+    except Exception:
+        return "https://pypi.org/project/fuellib/"
 
 
 def get_filename(fuel_name, liq_prop_model, export_mix, path):
