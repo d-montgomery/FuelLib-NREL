@@ -289,6 +289,18 @@ class fuel:
         df_table = pd.read_csv(self.gcmTableFile)
         df_table = df_table.drop(columns=["Units"])
 
+        # Exclude non-numeric metadata rows (e.g. "order", "type") which describe
+        # each functional group rather than providing a numeric coefficient, and
+        # coerce the remaining coefficient columns to numeric. This is necessary
+        # because pandas infers dtype per-column: a metadata row's string values
+        # would otherwise force an entire column to object/string dtype.
+        metadata_properties = ["order", "type"]
+        df_table = df_table[~df_table["Property"].isin(metadata_properties)]
+        coefficient_columns = df_table.columns[1:]
+        df_table[coefficient_columns] = df_table[coefficient_columns].apply(
+            pd.to_numeric
+        )
+
         def get_row(property_name):
             """
             Get property row from GCM table.
