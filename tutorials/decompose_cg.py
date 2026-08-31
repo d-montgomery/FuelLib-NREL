@@ -7,7 +7,7 @@ Reference: Constantinou & Gani, AIChE J. 40(10), 1994.
 
 This tool decomposes a SMILES string into first-order and second-order CG groups.
 The output is a count vector matching the 121-group column ordering used by
-FuelLib/gcmTableData/gcmTable.csv.
+FuelLib/gcmTableData/gani.csv.
 
 Scope: aliphatic + aromatic hydrocarbons (n-paraffins, iso-paraffins, terminal
 alpha-olefins, alkylbenzenes, alkylnaphthalenes, monocycloparaffins,
@@ -52,7 +52,7 @@ FIRST_ORDER_CH = {
 }
 
 # Canonical column ordering for the 121 groups (first-order + second-order)
-# matching gcmTable.csv columns 2..122 (0-indexed).
+# matching gani.csv columns 2..122 (0-indexed).
 # Second-order groups start at index 78 in this list.
 CG_GROUP_NAMES = [
     # -- First-order groups (indices 0-77) --

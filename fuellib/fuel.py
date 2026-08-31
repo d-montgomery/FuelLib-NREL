@@ -170,7 +170,7 @@ class fuel:
 
         self.groupDecompFile = os.path.join(self.fuelDataDecompDir, f"{decompName}.csv")
         self.gcxgcFile = os.path.join(self.fuelDataGcDir, f"{name}_init.csv")
-        self.gcmTableFile = os.path.join(gcmtable_dir, "gcmTable.csv")
+        self.gcmTableFile = os.path.join(gcmtable_dir, "gani.csv")
 
         # Read functional group data for mixture (num_compounds,num_groups)
         df_Nij = pd.read_csv(self.groupDecompFile)
