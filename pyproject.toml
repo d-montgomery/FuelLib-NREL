@@ -134,6 +134,7 @@ testpaths = [
 ]
 addopts = [
     "--doctest-modules",
+    "--ignore=tests/baselinePredictions/generate_baseline.py",
     "--cov=fuellib",
     "--cov-report=term-missing",
     "--cov-report=html",
