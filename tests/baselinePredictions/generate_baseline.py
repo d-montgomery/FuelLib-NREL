@@ -90,7 +90,9 @@ def main():
             units = [get_unit_for_column(col) for col in df_combined.columns]
 
             # Create MultiIndex columns (name + unit)
-            df_combined.columns = pd.MultiIndex.from_arrays([df_combined.columns, units])
+            df_combined.columns = pd.MultiIndex.from_arrays(
+                [df_combined.columns, units]
+            )
 
             # Save final table
             df_combined.to_csv(export_name, index=False)
