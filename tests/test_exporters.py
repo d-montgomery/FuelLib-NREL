@@ -3,23 +3,32 @@
 This test module verifies that the export CLI commands work correctly.
 """
 
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
-import shutil
-import os
+
 import fuellib as fl
 
 
-def run_export_command(cmd):
+def run_export_command(cmd, output_dir=None):
     """Run an export command and verify it succeeds.
 
     :param cmd: Command to run as a list of strings.
     :type cmd: list
+    :param output_dir: Optional output directory for the export. If provided, adds -o flag.
+    :type output_dir: str, optional
     :raises RuntimeError: If the command fails.
     """
+    # Add output directory flag if provided
+    if output_dir is not None:
+        cmd = cmd + ["-o", output_dir]
+
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=60, check=False
+        )
         if result.returncode != 0:
             print(f"Command failed: {' '.join(cmd)}")
             print(f"stdout: {result.stdout}")
@@ -32,78 +41,102 @@ def run_export_command(cmd):
 
 def test_pele_individual_component():
     """Test fl-export-pele individual component export."""
-    run_export_command(["fl-export-pele", "-f", "posf10264"])
+    with tempfile.TemporaryDirectory() as tmpdir:
+        run_export_command(["fl-export-pele", "-f", "posf10264"], output_dir=tmpdir)
 
 
 def test_pele_mixture_gcm():
     """Test fl-export-pele mixture export with GCM model."""
-    run_export_command(["fl-export-pele", "-f", "posf10264", "-m", "true"])
+    with tempfile.TemporaryDirectory() as tmpdir:
+        run_export_command(
+            ["fl-export-pele", "-f", "posf10264", "-m", "true"], output_dir=tmpdir
+        )
 
 
 def test_pele_mixture_mp():
     """Test fl-export-pele mixture export with MP model."""
-    run_export_command(["fl-export-pele", "-f", "posf10264", "-m", "true", "-l", "mp"])
+    with tempfile.TemporaryDirectory() as tmpdir:
+        run_export_command(
+            ["fl-export-pele", "-f", "posf10264", "-m", "true", "-l", "mp"],
+            output_dir=tmpdir,
+        )
 
 
 def test_pele_mixture_cgs():
     """Test fl-export-pele mixture export with CGS units."""
-    run_export_command(["fl-export-pele", "-f", "posf10264", "-m", "true", "-u", "cgs"])
+    with tempfile.TemporaryDirectory() as tmpdir:
+        run_export_command(
+            ["fl-export-pele", "-f", "posf10264", "-m", "true", "-u", "cgs"],
+            output_dir=tmpdir,
+        )
 
 
 def test_pele_deposit_species():
     """Test fl-export-pele single deposit species."""
-    run_export_command(["fl-export-pele", "-f", "posf10264", "-dep", "POSF10264"])
+    with tempfile.TemporaryDirectory() as tmpdir:
+        run_export_command(
+            ["fl-export-pele", "-f", "posf10264", "-dep", "POSF10264"],
+            output_dir=tmpdir,
+        )
 
 
 def test_converge_individual_component():
     """Test fl-export-converge individual component export."""
-    run_export_command(["fl-export-converge", "-f", "posf10264"])
+    with tempfile.TemporaryDirectory() as tmpdir:
+        run_export_command(["fl-export-converge", "-f", "posf10264"], output_dir=tmpdir)
 
 
 def test_converge_mixture():
     """Test fl-export-converge mixture export."""
-    run_export_command(
-        [
-            "fl-export-converge",
-            "-f",
-            "posf10264",
-            "-m",
-            "true",
-            "-t",
-            "280",
-            "-T",
-            "400",
-            "-s",
-            "10",
-        ]
-    )
+    with tempfile.TemporaryDirectory() as tmpdir:
+        run_export_command(
+            [
+                "fl-export-converge",
+                "-f",
+                "posf10264",
+                "-m",
+                "true",
+                "-t",
+                "280",
+                "-T",
+                "400",
+                "-s",
+                "10",
+            ],
+            output_dir=tmpdir,
+        )
 
 
 def test_pele_custom_fuel_data_dir():
     """Test fl-export-pele with custom fuel data directory (not embedded data)."""
-    # Create a temporary directory and copy fuelData to it
+    # Create temporary directories for fuel data and output
     with tempfile.TemporaryDirectory() as tmpdir:
         # Copy the embedded fuelData to a temp location
         embedded_fueldata = fl.get_fueldata_dir()
         custom_fueldata = os.path.join(tmpdir, "fuelData")
         shutil.copytree(embedded_fueldata, custom_fueldata)
 
-        # Export from custom location
+        # Export from custom location to temp output directory
+        output_dir = os.path.join(tmpdir, "output")
+        os.makedirs(output_dir)
         run_export_command(
-            ["fl-export-pele", "-f", "posf10264", "-dir", custom_fueldata]
+            ["fl-export-pele", "-f", "posf10264", "-dir", custom_fueldata],
+            output_dir=output_dir,
         )
 
 
 def test_converge_custom_fuel_data_dir():
     """Test fl-export-converge with custom fuel data directory (not embedded data)."""
-    # Create a temporary directory and copy fuelData to it
+    # Create temporary directories for fuel data and output
     with tempfile.TemporaryDirectory() as tmpdir:
         # Copy the embedded fuelData to a temp location
         embedded_fueldata = fl.get_fueldata_dir()
         custom_fueldata = os.path.join(tmpdir, "fuelData")
         shutil.copytree(embedded_fueldata, custom_fueldata)
 
-        # Export from custom location
+        # Export from custom location to temp output directory
+        output_dir = os.path.join(tmpdir, "output")
+        os.makedirs(output_dir)
         run_export_command(
             [
                 "fl-export-converge",
@@ -119,7 +152,8 @@ def test_converge_custom_fuel_data_dir():
                 "400",
                 "-s",
                 "10",
-            ]
+            ],
+            output_dir=output_dir,
         )
 
 
@@ -154,7 +188,7 @@ if __name__ == "__main__":
     for test_name, test_func in tests:
         try:
             test_func()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"✗ {test_name}: {e}")
             failed.append(test_name)
 

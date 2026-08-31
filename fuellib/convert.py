@@ -1,6 +1,6 @@
 """Unit conversion functions."""
 
-from .constants import k_B, N_A
+from .constants import N_A, k_B
 
 
 def C2K(T):
@@ -95,11 +95,11 @@ def epsilon_to_characteristic_temperature(epsilon_j_per_mol):
 
 
 __all__ = [
-    "C2K",
-    "K2C",
     "C2F",
+    "C2K",
     "F2C",
     "F2K",
+    "K2C",
     "K2F",
     "epsilon_to_characteristic_temperature",
 ]

@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fuellib"
-version = "3.0.1"
+version = "3.0.2a1"
 description = "FuelLib: A Python library for Group Contribution Method (GCM) calculations of fuel properties"
 readme = "README.md"
 license = {text = "BSD-3-Clause"}
 authors = [
     {name = "NLR", email = "david.montgomery@nlr.gov"},
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.12,<3.15"
 keywords = ["fuel", "thermodynamics", "group-contribution", "properties"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -19,11 +19,8 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
 ]
 
@@ -35,16 +32,22 @@ dependencies = [
     "matplotlib>=3.0",
     "rdkit>=2022.3.1",
     "importlib-resources>=5.0; python_version < '3.9'",
+    "keepachangelog>=2.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "black>=26.3.1",
     "pytest>=6.0",
     "sphinx>=4.0",
     "sphinx-rtd-theme>=1.0",
     "sphinxcontrib-bibtex>=2.0",
     "codespell>=2.2.0",
+    "ruff>=0.16.4",
+    "ty>=0.0.74",
+    "pytest-cov>=7.1.0",
+    "lefthook>=2.1.11",
+    "import-linter>=2.13",
+    "uv>=0.12.6",
 ]
 
 [project.scripts]
@@ -78,19 +81,98 @@ fuellib = [
     "data/**/*.yaml",
 ]
 
-[tool.black]
-line-length = 88
-target-version = ["py38", "py39", "py310", "py311", "py312"]
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
+# Ruff configurations
+[tool.ruff]
+exclude = [
+    "docs",
+    "tutorials",
+]
+
+[tool.ruff.lint]
+ignore = [
+    "COM812",   # missing trailing comma (handled by format)
+    "TID252",   # relative import
+    "D203",     # conflict: incorrect blank line before class (uses D211 instead)
+    "D213",     # conflict: multi-line summary second line (uses D212 instead)
+    "CPY001",   # copyright notice at top of file
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**.py" = ["S101"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+# Ty configurations
+[tool.ty.src]
+include = [
+    "fuellib",
+    "tests",
+]
+
+# Import-linter configurations
+[tool.importlinter]
+root_package = "fuellib"
+
+[[tool.importlinter.contracts]]
+name = "Module layering"
+type = "layers"
+layers = [
+    "fuellib.fuel",
+    "fuellib.gcm",
+    "fuellib.comp",
+]
+ignore_imports = [
+    "fuellib.comp -> fuellib.gcm.core",
+]
+
+# Pytest configurations
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+    "fuellib",
+]
+addopts = [
+    "--doctest-modules",
+    "--cov=fuellib",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+doctest_optionflags = "NORMALIZE_WHITESPACE"
+
+# Pytest coverage configurations
+[tool.coverage.run]
+branch = true
+source = ["fuellib"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 1
+
+# Pixi configurations
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[tool.pixi.dependencies]
+python = ">=3.12,<3.15"
+
+[tool.pixi.pypi-dependencies]
+fuellib = { path = ".", editable = true }
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
+
+[tool.pixi.feature.dev.tasks]
+# Pre-commit hooks
+fmt = "ruff format ."
+lint = "ruff check . --fix"
+types = "ty check"
+imports = "lint-imports"
+test = "pytest"
+pre-commit = "lefthook run pre-commit --all-files"
+# Build and clean documentation
+docs-build = "fl-build-docs"
+docs-clean = "fl-clean-docs"

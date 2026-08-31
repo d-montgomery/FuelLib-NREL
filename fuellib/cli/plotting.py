@@ -6,12 +6,14 @@ This module provides functions for visualizing:
 - Mixture properties over a temperature range
 """
 
+import argparse
 import os
-import re
+import sys
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import argparse
+
 import fuellib as fl
 
 
@@ -148,7 +150,7 @@ def plot_composition(
     family_weights_sorted = family_weights[families_present]
 
     # Create pie chart without labels/percentages (we'll add them outside)
-    wedges, texts = ax2.pie(
+    wedges, _texts = ax2.pie(
         family_weights_sorted,
         labels=None,
         autopct=None,
@@ -179,13 +181,13 @@ def plot_composition(
             va="center",
             fontsize=14,
             fontweight="bold",
-            arrowprops=dict(arrowstyle="-", color="black", lw=1.5),
+            arrowprops={"arrowstyle": "-", "color": "black", "lw": 1.5},
         )
 
     ax2.axis("equal")
 
     # Adjust layout to make room for legend BEFORE adding it
-    fig.tight_layout(rect=[0, 0.08, 1, 0.96])
+    fig.tight_layout(rect=(0, 0.08, 1, 0.96))
 
     # Add a single figure-level legend for all families
     legend_handles = [
@@ -282,7 +284,7 @@ def plot_mixture_properties(
     }
 
     # Deprecated: fuel-specific ranges (kept for reference, now using property-based)
-    default_ranges = {
+    _default_ranges = {
         "posf10264": [-40, 125],
         "posf10325": [-40, 125],
         "posf10289": [-40, 125],
@@ -398,7 +400,7 @@ def plot_mixture_properties(
                         mask = data[prop_name].notna()
                         T_data = data.loc[mask, "Temperature"]
                         prop_data = data.loc[mask, prop_name]
-                except Exception:
+                except (OSError, KeyError, ValueError):
                     pass
 
         # Generate predictions over temperature range
@@ -432,7 +434,7 @@ def plot_mixture_properties(
                     pred[i] = fuel.mixture_surface_tension(Y_li, T)
                 elif prop_name == "ThermalConductivity":
                     pred[i] = fuel.mixture_thermal_conductivity(Y_li, T)
-            except Exception:
+            except (ValueError, TypeError, RuntimeError):
                 pred[i] = np.nan
 
         return T_data, prop_data, T_pred, pred
@@ -579,9 +581,9 @@ def comp_main():
             save=args.save,
             display=args.display,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error plotting composition: {e}")
-        exit(1)
+        sys.exit(1)
 
 
 def props_main():
@@ -664,9 +666,9 @@ def props_main():
             save=args.save,
             display=args.display,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error plotting mixture properties: {e}")
-        exit(1)
+        sys.exit(1)
 
 
 def main():
@@ -767,9 +769,9 @@ def main():
                 output_dir=args.output_dir,
                 title=args.title,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error plotting composition: {e}")
-            exit(1)
+            sys.exit(1)
 
     elif args.plot_type == "props":
         try:
@@ -780,9 +782,9 @@ def main():
                 output_dir=args.output_dir,
                 title=args.title,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error plotting mixture properties: {e}")
-            exit(1)
+            sys.exit(1)
 
     else:
         # If no subcommand specified, show help

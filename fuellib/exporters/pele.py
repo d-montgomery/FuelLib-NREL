@@ -1,12 +1,15 @@
-import os
-import pandas as pd
 import argparse
-import subprocess
-from datetime import datetime
-from scipy import stats as st
-import fuellib as fl
 import json
+import os
+import subprocess
+import urllib.error
 import urllib.request
+from datetime import UTC, datetime
+
+import pandas as pd
+from scipy import stats as st
+
+import fuellib as fl
 
 # Default data directory - use fuellib's embedded data
 FUELDATA_DIR = fl.get_fueldata_dir()
@@ -94,11 +97,11 @@ def get_git_info():
             .strip()
             .decode("utf-8")
         )
-    except Exception:
+    except (OSError, subprocess.CalledProcessError, UnicodeDecodeError):
         # Fall back to package version
         try:
             git_commit = fl.__version__
-        except Exception:
+        except AttributeError:
             git_commit = "N/A"
 
     try:
@@ -110,7 +113,7 @@ def get_git_info():
             .strip()
             .decode("utf-8")
         )
-    except Exception:
+    except (OSError, subprocess.CalledProcessError, UnicodeDecodeError):
         # Try to get repository URL from PyPI metadata
         git_remote = _get_pypi_repo_url()
 
@@ -147,14 +150,14 @@ def _get_pypi_repo_url():
                 and data["info"]["home_page"]
             ):
                 return data["info"]["home_page"]
-    except Exception:
+    except (KeyError, TypeError, urllib.error.URLError):
         pass
 
     # Final fallback: PyPI package URL
     try:
         version = fl.__version__
         return f"https://pypi.org/project/fuellib/{version}/"
-    except Exception:
+    except AttributeError:
         return "https://pypi.org/project/fuellib/"
 
 
@@ -491,7 +494,7 @@ def export_pele(
     }
 
     # Get header information
-    now = datetime.now()
+    now = datetime.now(tz=UTC)
     dt_string = now.strftime("%Y-%m-%d %H:%M:%S")
     git_commit, git_remote = get_git_info()
 
@@ -732,7 +735,7 @@ def main():
     psat_antoine = args.psat_antoine
 
     # Print the parsed arguments
-    print(f"Preparing to export properties:")
+    print("Preparing to export properties:")
     print(f"    Fuel name: {fuel_name}")
     print(f"    Decomposition name: {fuel_decomp_name}")
     print(f"    Units: {units}")

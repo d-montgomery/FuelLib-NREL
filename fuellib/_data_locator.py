@@ -6,12 +6,7 @@ within the fuellib package using importlib.resources.
 """
 
 import os
-import sys
-
-if sys.version_info >= (3, 9):
-    from importlib.resources import files
-else:
-    from importlib_resources import files
+from importlib.resources import files
 
 try:
     import yaml
@@ -23,11 +18,11 @@ except ImportError:
 
 __all__ = [
     "get_data_dir",
-    "get_gcmtable_dir",
+    "get_fueldata_decomp_dir",
     "get_fueldata_dir",
     "get_fueldata_gc_dir",
-    "get_fueldata_decomp_dir",
     "get_fueldata_props_dir",
+    "get_gcmtable_dir",
     "get_metadata_decomp_name",
     "get_metadata_props_data",
 ]
@@ -178,11 +173,11 @@ def get_metadata_decomp_name(fuel_name, fuel_data_dir=None):
     try:
         with open(metadata_file, "r") as f:
             data = yaml.safe_load(f)
-    except Exception as e:
+    except (OSError, yaml.YAMLError) as e:
         raise ValueError(
             f"Error parsing {metadata_file}:\n{e}\n\n"
             f"Make sure the file is valid YAML with proper indentation."
-        )
+        ) from e
 
     if not data or "fuels" not in data:
         raise ValueError(
@@ -251,7 +246,7 @@ def get_metadata_props_data(fuel_name, fuel_data_dir=None):
     try:
         with open(metadata_file, "r") as f:
             data = yaml.safe_load(f)
-    except Exception:
+    except (OSError, yaml.YAMLError):
         return None
 
     if not data or "fuels" not in data or fuel_name not in data["fuels"]:

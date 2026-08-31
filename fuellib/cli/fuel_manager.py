@@ -5,9 +5,11 @@ This module provides tools for listing and discovering available fuels
 in the FuelLib database, including source information and metadata.
 """
 
-import os
 import argparse
+import os
+import sys
 import warnings
+
 import fuellib as fl
 
 try:
@@ -93,7 +95,7 @@ def list_fuels_main():
         # List all fuel files in the gcData directory
         if not os.path.exists(fuel_data_dir):
             print(f"Error: Fuel data directory not found: {fuel_data_dir}")
-            exit(1)
+            sys.exit(1)
 
         # Extract fuel names from *_init.csv files
         fuel_files = [f for f in os.listdir(fuel_data_dir) if f.endswith("_init.csv")]
@@ -101,7 +103,7 @@ def list_fuels_main():
 
         if not fuel_names:
             print("No fuels found in the specified directory.")
-            exit(0)
+            sys.exit(0)
 
         # Load metadata from the appropriate location
         metadata = load_fuel_metadata(metadata_dir)
@@ -148,6 +150,6 @@ def list_fuels_main():
             )
         print("=" * 80 + "\n")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error listing fuels: {e}")
-        exit(1)
+        sys.exit(1)

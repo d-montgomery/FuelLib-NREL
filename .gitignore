@@ -23,3 +23,15 @@ venv/
 # Figures from plotting tools
 composition_*.png
 mixture_*.png
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+pixi.lock
+uv.lock
+
+# pytest
+.coverage
+
+# VS Code settings
+.vscode/

@@ -1,4 +1,5 @@
 import os
+
 import numpy as np
 import pandas as pd
 
@@ -25,7 +26,7 @@ def get_pred_and_data(fuel_name, prop_name):
     # Vectors for temperature (convert from C to K)
     T_pred = fl.convert.C2K(T_data)
 
-    for i in range(0, len(T_pred)):
+    for i in range(len(T_pred)):
         Y_li = fuel.Y_0
 
         if prop_name == "Density":

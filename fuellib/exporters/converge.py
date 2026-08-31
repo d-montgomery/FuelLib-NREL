@@ -1,7 +1,9 @@
+import argparse
 import os
+
 import numpy as np
 import pandas as pd
-import argparse
+
 import fuellib as fl
 
 # Default data directory - use fuellib's embedded data
@@ -281,7 +283,7 @@ def export_converge(
             compound_type = "mixture" if is_mixture else "compound"
             print("!" * 88)
             print(
-                f"   Warning: Some compounds have freezing temperatures above the estimated"
+                "   Warning: Some compounds have freezing temperatures above the estimated"
             )
             print(
                 f"   freezing temperature of the {compound_type} ({T_freeze:.2f} K). All properties calculated"
@@ -298,7 +300,7 @@ def export_converge(
                 T_max_allowed = nearest_floor(T_array, T_max_allowed)
                 print("!" * 88)
                 print(
-                    f"   Warning: Some compounds have critical temperatures below the estimated"
+                    "   Warning: Some compounds have critical temperatures below the estimated"
                 )
                 print(
                     f"   critical temperature of the mixture ({T_crit:.2f} K). All properties will be"
@@ -628,10 +630,10 @@ def main():
     export_mix = args.export_mix
 
     # Print the parsed arguments
-    print(f"Preparing to export mixture properties:")
+    print("Preparing to export mixture properties:")
     print(f"    Fuel name: {fuel_name}")
     if export_mix:
-        print(f"    Exporting mixture properties: True")
+        print("    Exporting mixture properties: True")
     print(f"    Units: {units}")
     print(f"    Minimum temperature: {temp_min} K")
     print(f"    Maximum temperature: {temp_max} K")
@@ -640,7 +642,8 @@ def main():
     print(f"    Fuel data directory: {fuel_data_dir}")
 
     # Get decomposition name from metadata (required)
-    decomp_name = fl.get_metadata_decomp_name(fuel_name, fuel_data_dir)
+    # Note: decomp_name not currently used, but kept for API consistency
+    _ = fl.get_metadata_decomp_name(fuel_name, fuel_data_dir)
 
     # Create the fuel object
     fuel = fl.fuel(fuel_name, fuelDataDir=fuel_data_dir)

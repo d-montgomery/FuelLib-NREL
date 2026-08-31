@@ -1,21 +1,21 @@
 """Fuel class for Group Contribution Method calculations."""
 
 import os
+
 import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
 
-from .constants import k_B, N_A
-from .convert import K2C
-from .utility import mixing_rule
 from ._data_locator import (
-    get_gcmtable_dir,
+    get_fueldata_decomp_dir,
     get_fueldata_dir,
     get_fueldata_gc_dir,
-    get_fueldata_decomp_dir,
     get_fueldata_props_dir,
+    get_gcmtable_dir,
     get_metadata_decomp_name,
 )
+from .convert import K2C
+from .utility import mixing_rule
 
 
 class fuel:
@@ -50,7 +50,7 @@ class fuel:
     compounds: list
 
     #: Molecular formulas for each compound
-    formulas: np.ndarray
+    formulas: np.ndarray | None
 
     #: Mass fractions of each compound. Shape: (num_compounds,)
     Y_0: np.ndarray
@@ -122,7 +122,7 @@ class fuel:
     nH: np.ndarray
 
     #: PelePhysics keys for each compound (if available)
-    pelephysics_keys: np.ndarray
+    pelephysics_keys: np.ndarray | None
 
     # Number of first and second order groups from Constantinou and Gani
     N_g1 = 78
@@ -155,8 +155,8 @@ class fuel:
         else:
             # Validate and use custom fuel directory
             from ._data_locator import (
-                _validate_fuel_data_dir,
                 _get_props_dir_for_fueldata,
+                _validate_fuel_data_dir,
             )
 
             _validate_fuel_data_dir(fuelDataDir)
@@ -252,17 +252,19 @@ class fuel:
 
         # Load molecular formulas if available
         if "Formula" in df_gcxgc.columns:
-            self.formulas = [
-                formula.strip() if pd.notna(formula) else None
-                for formula in df_gcxgc["Formula"].to_list()
-            ]
+            self.formulas = np.array(
+                [
+                    formula.strip() if pd.notna(formula) else None
+                    for formula in df_gcxgc["Formula"].to_list()
+                ]
+            )
         else:
             self.formulas = None
 
         if "PelePhysics Key" in df_gcxgc.columns:
-            self.pelephysics_keys = [
-                key.strip() for key in df_gcxgc["PelePhysics Key"].to_list()
-            ]
+            self.pelephysics_keys = np.array(
+                [key.strip() for key in df_gcxgc["PelePhysics Key"].to_list()]
+            )
         else:
             self.pelephysics_keys = None
 

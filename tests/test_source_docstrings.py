@@ -60,9 +60,10 @@ def _iter_api_functions(module_node):
                 yield stmt
         elif isinstance(stmt, ast.ClassDef):
             for class_stmt in stmt.body:
-                if isinstance(class_stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    if not class_stmt.name.startswith("_"):
-                        yield class_stmt
+                if isinstance(
+                    class_stmt, (ast.FunctionDef, ast.AsyncFunctionDef)
+                ) and not class_stmt.name.startswith("_"):
+                    yield class_stmt
 
 
 class SourceDocstringContractTestCase(unittest.TestCase):

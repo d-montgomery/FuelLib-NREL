@@ -6,8 +6,8 @@ setup of paths and environment variables needed for autodoc to work correctly.
 """
 
 import os
-import sys
 import subprocess
+import sys
 
 
 def main():
@@ -46,7 +46,7 @@ def main():
     print()
 
     # Run sphinx-build
-    result = subprocess.run(build_cmd)
+    result = subprocess.run(build_cmd, check=False)
 
     if result.returncode == 0:
         print()

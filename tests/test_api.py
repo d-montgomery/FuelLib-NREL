@@ -1,6 +1,6 @@
 import inspect
-import types
 import unittest
+
 import numpy as np
 
 import fuellib as fl
@@ -82,8 +82,8 @@ class ApiContractTestCase(unittest.TestCase):
         self.assertTrue(
             hasattr(fl.constants, "N_A"), msg="FuelLib.constants.N_A not found"
         )
-        print(f"  ✓ constants.k_B (constant)")
-        print(f"  ✓ constants.N_A (constant)")
+        print("  ✓ constants.k_B (constant)")
+        print("  ✓ constants.N_A (constant)")
         print("\nFuelLib.convert Module API:")
         convert_funcs = {
             "C2K": "(T)",
@@ -133,7 +133,7 @@ class ApiContractTestCase(unittest.TestCase):
             "k_B": "Boltzmann constant",
             "N_A": "Avogadro number",
         }
-        for name in constants_vals.keys():
+        for name in constants_vals:
             self.assertTrue(
                 hasattr(fl.constants, name), msg=f"fuellib.constants missing: {name}"
             )
@@ -243,7 +243,10 @@ class FuelLibFunctionEvalTestCase(unittest.TestCase):
                 # Composition conversion methods
                 print("  Composition Conversions:")
                 methods_to_test = [
-                    ("mean_molecular_weight", lambda: fuel.mean_molecular_weight(Yi)),
+                    (
+                        "mean_molecular_weight",
+                        lambda fuel=fuel, Yi=Yi: fuel.mean_molecular_weight(Yi),
+                    ),
                 ]
                 for method_name, method_call in methods_to_test:
                     try:
@@ -293,19 +296,25 @@ class FuelLibFunctionEvalTestCase(unittest.TestCase):
                 alt_methods = [
                     (
                         "psat (Ambrose-Walton)",
-                        lambda: fuel.psat(self.T, correlation="Ambrose-Walton"),
+                        lambda fuel=fuel: fuel.psat(
+                            self.T, correlation="Ambrose-Walton"
+                        ),
                     ),
                     (
                         "surface_tension (Pitzer)",
-                        lambda: fuel.surface_tension(self.T, correlation="Pitzer"),
+                        lambda fuel=fuel: fuel.surface_tension(
+                            self.T, correlation="Pitzer"
+                        ),
                     ),
                     (
                         "diffusion_coeff (Tee)",
-                        lambda: fuel.diffusion_coeff(self.p, self.T, correlation="Tee"),
+                        lambda fuel=fuel: fuel.diffusion_coeff(
+                            self.p, self.T, correlation="Tee"
+                        ),
                     ),
                     (
                         "diffusion_coeff (Wilke)",
-                        lambda: fuel.diffusion_coeff(
+                        lambda fuel=fuel: fuel.diffusion_coeff(
                             self.p, self.T, correlation="Wilke"
                         ),
                     ),
@@ -346,50 +355,57 @@ class FuelLibFunctionEvalTestCase(unittest.TestCase):
                 # Mixture properties
                 print("  Mixture Properties:")
                 mixture_methods = [
-                    ("mixture_density", lambda: fuel.mixture_density(Yi, self.T)),
+                    (
+                        "mixture_density",
+                        lambda fuel=fuel, Yi=Yi: fuel.mixture_density(Yi, self.T),
+                    ),
                     (
                         "mixture_kinematic_viscosity (Kendall-Monroe)",
-                        lambda: fuel.mixture_kinematic_viscosity(
+                        lambda fuel=fuel, Yi=Yi: fuel.mixture_kinematic_viscosity(
                             Yi, self.T, correlation="Kendall-Monroe"
                         ),
                     ),
                     (
                         "mixture_kinematic_viscosity (Arrhenius)",
-                        lambda: fuel.mixture_kinematic_viscosity(
+                        lambda fuel=fuel, Yi=Yi: fuel.mixture_kinematic_viscosity(
                             Yi, self.T, correlation="Arrhenius"
                         ),
                     ),
                     (
                         "mixture_dynamic_viscosity",
-                        lambda: fuel.mixture_dynamic_viscosity(Yi, self.T),
+                        lambda fuel=fuel, Yi=Yi: fuel.mixture_dynamic_viscosity(
+                            Yi, self.T
+                        ),
                     ),
                     (
                         "mixture_vapor_pressure (Lee-Kesler)",
-                        lambda: fuel.mixture_vapor_pressure(
+                        lambda fuel=fuel, Yi=Yi: fuel.mixture_vapor_pressure(
                             Yi, self.T, correlation="Lee-Kesler"
                         ),
                     ),
                     (
                         "mixture_vapor_pressure (Ambrose-Walton)",
-                        lambda: fuel.mixture_vapor_pressure(
+                        lambda fuel=fuel, Yi=Yi: fuel.mixture_vapor_pressure(
                             Yi, self.T, correlation="Ambrose-Walton"
                         ),
                     ),
                     (
                         "mixture_surface_tension (Brock-Bird)",
-                        lambda: fuel.mixture_surface_tension(
+                        lambda fuel=fuel, Yi=Yi: fuel.mixture_surface_tension(
                             Yi, self.T, correlation="Brock-Bird"
                         ),
                     ),
                     (
                         "mixture_surface_tension (Pitzer)",
-                        lambda: fuel.mixture_surface_tension(
+                        lambda fuel=fuel, Yi=Yi: fuel.mixture_surface_tension(
                             Yi, self.T, correlation="Pitzer"
                         ),
                     ),
                     (
                         "mixture_thermal_conductivity",
-                        lambda: fuel.mixture_thermal_conductivity(Yi, self.T),
+                        lambda fuel=fuel, Yi=Yi: fuel.mixture_thermal_conductivity(
+                            Yi, self.T
+                        ),
                     ),
                 ]
                 for method_name, method_call in mixture_methods:

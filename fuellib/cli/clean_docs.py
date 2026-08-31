@@ -31,7 +31,7 @@ def main():
         try:
             shutil.rmtree(build_dir)
             print(f"Removed documentation build directory: {build_dir}")
-        except Exception as e:
+        except OSError as e:
             print(f"Error removing build directory: {e}", file=sys.stderr)
             sys.exit(1)
     else:
@@ -42,7 +42,7 @@ def main():
         try:
             shutil.rmtree(generated_dir)
             print(f"Removed generated documentation directory: {generated_dir}")
-        except Exception as e:
+        except OSError as e:
             print(f"Error removing generated directory: {e}", file=sys.stderr)
             sys.exit(1)
     else:

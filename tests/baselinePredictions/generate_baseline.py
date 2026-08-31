@@ -1,5 +1,6 @@
 import os
 import sys
+
 import numpy as np
 import pandas as pd
 
@@ -18,7 +19,6 @@ TESTS_DIR = os.path.dirname(os.path.dirname(__file__))
 if TESTS_DIR not in sys.path:
     sys.path.insert(0, TESTS_DIR)
 
-import fuellib as fl
 from get_pred_and_data import get_pred_and_data
 
 # Directories for tests and baseline predictions
@@ -51,9 +51,9 @@ prop_units = {
 
 
 def get_unit_for_column(col_name):
-    for prop in prop_units:
+    for prop, value in prop_units.items():
         if prop in col_name:
-            return prop_units[prop]
+            return value
     return ""
 
 
@@ -78,13 +78,14 @@ for fuel_name in fuel_names:
             df_combined = pd.merge(df_combined, df_prop, on="Temperature", how="outer")
 
     # Sort by Temperature (optional, but nice for clean output)
-    df_combined = df_combined.sort_values(by="Temperature").reset_index(drop=True)
+    if df_combined is not None:
+        df_combined = df_combined.sort_values(by="Temperature").reset_index(drop=True)
 
-    # Generate units list in correct order
-    units = [get_unit_for_column(col) for col in df_combined.columns]
+        # Generate units list in correct order
+        units = [get_unit_for_column(col) for col in df_combined.columns]
 
-    # Create MultiIndex columns (name + unit)
-    df_combined.columns = pd.MultiIndex.from_arrays([df_combined.columns, units])
+        # Create MultiIndex columns (name + unit)
+        df_combined.columns = pd.MultiIndex.from_arrays([df_combined.columns, units])
 
-    # Save final table
-    df_combined.to_csv(export_name, index=False)
+        # Save final table
+        df_combined.to_csv(export_name, index=False)

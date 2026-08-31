@@ -64,4 +64,4 @@ def droplet_mass(fuel, r, Yi, T):
         return np.zeros_like(fuel.MW)
 
 
-__all__ = ["mixing_rule", "droplet_volume", "droplet_mass"]
+__all__ = ["droplet_mass", "droplet_volume", "mixing_rule"]

@@ -2,8 +2,10 @@
 
 import re
 from pathlib import Path
-import pytest
+
 import pandas as pd
+import pytest
+
 import fuellib as fl
 
 
@@ -91,14 +93,17 @@ class TestHCIdentification:
         # Load fuel
         fuel = fl.fuel(fuel_name)
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Fuel: {fuel_name}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Compounds: {fuel.num_compounds}")
 
         # === Test 1: nC matches reference formula ===
         mismatches = []
-        for compound, formula, nc_calc in zip(fuel.compounds, fuel.formulas, fuel.nC):
+        formulas = (
+            fuel.formulas if fuel.formulas is not None else [None] * fuel.num_compounds
+        )
+        for compound, formula, nc_calc in zip(fuel.compounds, formulas, fuel.nC):
             if not formula or pd.isna(formula):
                 continue
 
@@ -112,12 +117,15 @@ class TestHCIdentification:
                         f"{compound}: calculated nC={nc_calc:.1f}, expected nC={nc_ref}"
                     )
 
-        assert not mismatches, f"Carbon count mismatches:\n" + "\n".join(mismatches)
-        print(f"✓ nC from decomp matches reference formula")
+        assert not mismatches, "Carbon count mismatches:\n" + "\n".join(mismatches)
+        print("✓ nC from decomp matches reference formula")
 
         # === Test 2: nH matches reference formula ===
         mismatches = []
-        for compound, formula, nh_calc in zip(fuel.compounds, fuel.formulas, fuel.nH):
+        formulas = (
+            fuel.formulas if fuel.formulas is not None else [None] * fuel.num_compounds
+        )
+        for compound, formula, nh_calc in zip(fuel.compounds, formulas, fuel.nH):
             if not formula or pd.isna(formula):
                 continue
 
@@ -131,8 +139,8 @@ class TestHCIdentification:
                         f"{compound}: calculated nH={nh_calc:.1f}, expected nH={nh_ref}"
                     )
 
-        assert not mismatches, f"Hydrogen count mismatches:\n" + "\n".join(mismatches)
-        print(f"✓ nH from decomp matches reference formula")
+        assert not mismatches, "Hydrogen count mismatches:\n" + "\n".join(mismatches)
+        print("✓ nH from decomp matches reference formula")
 
         # === Test 3: hc_type is consistent ===
         valid_types = {"n-alkane", "iso-alkane", "cyclo-alkane", "alkene", "aromatic"}
@@ -145,34 +153,39 @@ class TestHCIdentification:
                     f"(must be one of {valid_types})"
                 )
 
-        assert not mismatches, f"Invalid hydrocarbon types:\n" + "\n".join(mismatches)
-        print(f"✓ hc_type from decomp is consistent")
+        assert not mismatches, "Invalid hydrocarbon types:\n" + "\n".join(mismatches)
+        print("✓ hc_type from decomp is consistent")
 
         # === Test 4: hc_type matches formula-derived expectations ===
         mismatches = []
+        formulas = (
+            fuel.formulas if fuel.formulas is not None else [None] * fuel.num_compounds
+        )
         for compound, formula, hc_type_calc in zip(
-            fuel.compounds, fuel.formulas, fuel.hc_type
+            fuel.compounds, formulas, fuel.hc_type
         ):
             if not formula or pd.isna(formula):
                 continue
 
             hc_type_expected = infer_hc_type_from_formula(formula, compound)
 
-            if hc_type_expected is not None:
-                if hc_type_calc != hc_type_expected:
-                    mismatches.append(
-                        f"{compound}: calculated hc_type='{hc_type_calc}', "
-                        f"expected hc_type='{hc_type_expected}' "
-                        f"(formula: {formula})"
-                    )
+            if hc_type_expected is not None and hc_type_calc != hc_type_expected:
+                mismatches.append(
+                    f"{compound}: calculated hc_type='{hc_type_calc}', "
+                    f"expected hc_type='{hc_type_expected}' "
+                    f"(formula: {formula})"
+                )
 
-        assert not mismatches, f"Hydrocarbon type mismatches:\n" + "\n".join(mismatches)
-        print(f"✓ hc_type from decomp matches formula-derived expectations")
+        assert not mismatches, "Hydrocarbon type mismatches:\n" + "\n".join(mismatches)
+        print("✓ hc_type from decomp matches formula-derived expectations")
 
         # === Test 5: Aromatic compounds identified ===
+        formulas = (
+            fuel.formulas if fuel.formulas is not None else [None] * fuel.num_compounds
+        )
         aromatic_names = {
             compound
-            for compound, formula in zip(fuel.compounds, fuel.formulas)
+            for compound, formula in zip(fuel.compounds, formulas)
             if formula
             and (
                 "Benzene" in compound
@@ -183,15 +196,12 @@ class TestHCIdentification:
 
         mismatches = []
         for compound, hc_type in zip(fuel.compounds, fuel.hc_type):
-            if compound in aromatic_names:
-                if hc_type != "aromatic":
-                    mismatches.append(
-                        f"{compound}: should be aromatic but got '{hc_type}'"
-                    )
+            if compound in aromatic_names and hc_type != "aromatic":
+                mismatches.append(f"{compound}: should be aromatic but got '{hc_type}'")
 
-        assert (
-            not mismatches
-        ), f"Aromatic compounds not correctly identified:\n" + "\n".join(mismatches)
+        assert not mismatches, (
+            "Aromatic compounds not correctly identified:\n" + "\n".join(mismatches)
+        )
         aromatic_count = len(aromatic_names) if aromatic_names else 0
         print(f"✓ aromatic compounds identified correctly ({aromatic_count} found)")
 
@@ -202,15 +212,12 @@ class TestHCIdentification:
 
         mismatches = []
         for compound, hc_type in zip(fuel.compounds, fuel.hc_type):
-            if compound in nalkane_names:
-                if hc_type != "n-alkane":
-                    mismatches.append(
-                        f"{compound}: should be n-alkane but got '{hc_type}'"
-                    )
+            if compound in nalkane_names and hc_type != "n-alkane":
+                mismatches.append(f"{compound}: should be n-alkane but got '{hc_type}'")
 
-        assert (
-            not mismatches
-        ), f"n-alkane compounds not correctly identified:\n" + "\n".join(mismatches)
+        assert not mismatches, (
+            "n-alkane compounds not correctly identified:\n" + "\n".join(mismatches)
+        )
         nalkane_count = len(nalkane_names) if nalkane_names else 0
         print(f"✓ n-alkane compounds identified correctly ({nalkane_count} found)")
 
@@ -224,15 +231,14 @@ class TestHCIdentification:
 
         mismatches = []
         for compound, hc_type in zip(fuel.compounds, fuel.hc_type):
-            if compound in cyclo_names:
-                if hc_type != "cyclo-alkane":
-                    mismatches.append(
-                        f"{compound}: should be cyclo-alkane but got '{hc_type}'"
-                    )
+            if compound in cyclo_names and hc_type != "cyclo-alkane":
+                mismatches.append(
+                    f"{compound}: should be cyclo-alkane but got '{hc_type}'"
+                )
 
-        assert (
-            not mismatches
-        ), f"Cycloalkane compounds not correctly identified:\n" + "\n".join(mismatches)
+        assert not mismatches, (
+            "Cycloalkane compounds not correctly identified:\n" + "\n".join(mismatches)
+        )
         cyclo_count = len(cyclo_names) if cyclo_names else 0
         print(f"✓ cyclo-alkane compounds identified correctly ({cyclo_count} found)")
 
@@ -243,15 +249,14 @@ class TestHCIdentification:
 
         mismatches = []
         for compound, hc_type in zip(fuel.compounds, fuel.hc_type):
-            if compound in isoalkane_names:
-                if hc_type != "iso-alkane":
-                    mismatches.append(
-                        f"{compound}: should be iso-alkane but got '{hc_type}'"
-                    )
+            if compound in isoalkane_names and hc_type != "iso-alkane":
+                mismatches.append(
+                    f"{compound}: should be iso-alkane but got '{hc_type}'"
+                )
 
-        assert (
-            not mismatches
-        ), f"iso-alkane compounds not correctly identified:\n" + "\n".join(mismatches)
+        assert not mismatches, (
+            "iso-alkane compounds not correctly identified:\n" + "\n".join(mismatches)
+        )
         isoalkane_count = len(isoalkane_names) if isoalkane_names else 0
         print(f"✓ iso-alkane compounds identified correctly ({isoalkane_count} found)")
 
@@ -260,14 +265,11 @@ class TestHCIdentification:
 
         mismatches = []
         for compound, hc_type in zip(fuel.compounds, fuel.hc_type):
-            if compound in alkene_names:
-                if hc_type != "alkene":
-                    mismatches.append(
-                        f"{compound}: should be alkene but got '{hc_type}'"
-                    )
+            if compound in alkene_names and hc_type != "alkene":
+                mismatches.append(f"{compound}: should be alkene but got '{hc_type}'")
 
-        assert (
-            not mismatches
-        ), f"Alkene compounds not correctly identified:\n" + "\n".join(mismatches)
+        assert not mismatches, (
+            "Alkene compounds not correctly identified:\n" + "\n".join(mismatches)
+        )
         alkene_count = len(alkene_names) if alkene_names else 0
         print(f"✓ alkene compounds identified correctly ({alkene_count} found)")
