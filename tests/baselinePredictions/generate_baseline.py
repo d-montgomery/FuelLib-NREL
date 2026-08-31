@@ -57,35 +57,46 @@ def get_unit_for_column(col_name):
     return ""
 
 
-# Loop through each fuel and generate csv of baseline property predictions
-for fuel_name in fuel_names:
-    export_name = os.path.join(baseline_dir, f"{fuel_name}.csv")
-    df_combined = None
+def main():
+    # Loop through each fuel and generate csv of baseline property predictions
+    for fuel_name in fuel_names:
+        export_name = os.path.join(baseline_dir, f"{fuel_name}.csv")
+        df_combined = None
 
-    for prop in prop_names:
-        T, data, pred = get_pred_and_data(fuel_name, prop)
+        for prop in prop_names:
+            T, data, pred = get_pred_and_data(fuel_name, prop)
 
-        # Create a dataframe for this property
-        df_prop = pd.DataFrame(
-            {"Temperature": T, prop: pred, f"Error_{prop}": np.abs(data - pred)}
-        )
+            # Create a dataframe for this property
+            df_prop = pd.DataFrame(
+                {"Temperature": T, prop: pred, f"Error_{prop}": np.abs(data - pred)}
+            )
 
-        if df_combined is None:
-            # Initialize combined dataframe
-            df_combined = df_prop
-        else:
-            # Merge on Temperature using outer join to ensure all temperatures are kept
-            df_combined = pd.merge(df_combined, df_prop, on="Temperature", how="outer")
+            if df_combined is None:
+                # Initialize combined dataframe
+                df_combined = df_prop
+            else:
+                # Merge on Temperature using outer join to ensure all temperatures are kept
+                df_combined = pd.merge(
+                    df_combined, df_prop, on="Temperature", how="outer"
+                )
 
-    # Sort by Temperature (optional, but nice for clean output)
-    if df_combined is not None:
-        df_combined = df_combined.sort_values(by="Temperature").reset_index(drop=True)
+        # Sort by Temperature (optional, but nice for clean output)
+        if df_combined is not None:
+            df_combined = df_combined.sort_values(by="Temperature").reset_index(
+                drop=True
+            )
 
-        # Generate units list in correct order
-        units = [get_unit_for_column(col) for col in df_combined.columns]
+            # Generate units list in correct order
+            units = [get_unit_for_column(col) for col in df_combined.columns]
 
-        # Create MultiIndex columns (name + unit)
-        df_combined.columns = pd.MultiIndex.from_arrays([df_combined.columns, units])
+            # Create MultiIndex columns (name + unit)
+            df_combined.columns = pd.MultiIndex.from_arrays(
+                [df_combined.columns, units]
+            )
 
-        # Save final table
-        df_combined.to_csv(export_name, index=False)
+            # Save final table
+            df_combined.to_csv(export_name, index=False)
+
+
+if __name__ == "__main__":
+    main()
