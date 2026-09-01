@@ -143,7 +143,14 @@ class TestHCIdentification:
         print("✓ nH from decomp matches reference formula")
 
         # === Test 3: hc_type is consistent ===
-        valid_types = {"n-alkane", "iso-alkane", "cyclo-alkane", "alkene", "aromatic"}
+        valid_types = {
+            "n-alkane",
+            "iso-alkane",
+            "cyclo-alkane",
+            "alkene",
+            "aromatic",
+            "not-hydrocarbon",
+        }
 
         mismatches = []
         for compound, hc_type in zip(fuel.compounds, fuel.hc_type):

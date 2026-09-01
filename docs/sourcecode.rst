@@ -17,6 +17,12 @@ FuelLib File Organization
     - ``convert.py``: temperature conversion functions and Lennard-Jones calculations
     - ``utility.py``: utility functions for mixture properties and droplet calculations
     - ``_data_locator.py``: internal module for locating and validating fuel data directories
+
+    - **gcm:** subpackage defining the Group Contribution Method (GCM) abstraction used by :class:`fuel` to compute per-compound properties
+
+        - ``base.py``: abstract :class:`GCMMethod` base class that concrete GCM implementations subclass
+        - ``registry.py``: name-based registry (``register_gcm``, ``get_gcm``) for looking up GCM implementations
+        - ``gani.py``: :class:`GaniGCM`, the Constantinou-Gani group contribution method implementation
     
     - **data**: directory containing fuel data and metadata    
         
@@ -78,3 +84,4 @@ Click on links below for the full auto-documentation of the API.
     fuellib.constants
     fuellib.convert
     fuellib.utility
+    fuellib.gcm

@@ -15,6 +15,7 @@ from ._data_locator import (
     get_metadata_decomp_name,
 )
 from .convert import K2C
+from .gcm import get_gcm
 from .utility import mixing_rule
 
 
@@ -124,9 +125,8 @@ class fuel:
     #: PelePhysics keys for each compound (if available)
     pelephysics_keys: np.ndarray | None
 
-    # Number of first and second order groups from Constantinou and Gani
-    N_g1 = 78
-    N_g2 = 43
+    #: Active GCM instances by name (e.g. "gani"), providing raw per-GCM outputs
+    gcms: dict
 
     def __init__(self, name, decompName=None, fuelDataDir=None):
         """
@@ -168,80 +168,60 @@ class fuel:
         # Get GCM table directory (always from built-in data)
         gcmtable_dir = get_gcmtable_dir()
 
-        self.groupDecompFile = os.path.join(self.fuelDataDecompDir, f"{decompName}.csv")
         self.gcxgcFile = os.path.join(self.fuelDataGcDir, f"{name}_init.csv")
-        self.gcmTableFile = os.path.join(gcmtable_dir, "gani.csv")
 
-        # Read functional group data for mixture (num_compounds,num_groups)
-        df_Nij = pd.read_csv(self.groupDecompFile)
-        self.Nij = df_Nij.iloc[:, 1:].to_numpy()
-        self.num_compounds = self.Nij.shape[0]
-        self.num_groups = self.Nij.shape[1]
+        # Instantiate the active GCM(s). Each GCM loads its own functional
+        # group decomposition matrix (Nij) from the group decomposition file
+        # and computes its own properties. Only Constantinou-Gani is
+        # available today; future GCMs (e.g. UNIFAC for activity
+        # coefficients) will be added to this dict and looked up by whichever
+        # property they provide.
+        self.gcms = {
+            "gani": get_gcm("gani")(self.fuelDataDecompDir, decompName, gcmtable_dir)
+        }
+        gani = self.gcms["gani"]
 
-        # Classify hydrocarbon by family (used in thermal conductivity)
-        # 0: saturated hydrocarbons
-        # 1: aromatics
-        # 2: cycloparaffins
-        # 3: olefins
-        self.fam = np.zeros(self.num_compounds, dtype=int)
+        # All active GCMs describe the same physical mixture, so they must
+        # agree on the number of compounds even though they may use
+        # different functional group decompositions (and therefore different
+        # Nij/num_groups).
+        num_compounds_by_gcm = {
+            gcm_name: gcm_instance.num_compounds
+            for gcm_name, gcm_instance in self.gcms.items()
+        }
+        if len(set(num_compounds_by_gcm.values())) != 1:
+            raise ValueError(
+                "All active GCMs must describe the same number of compounds, "
+                f"but got: {num_compounds_by_gcm}."
+            )
 
-        # Classify hydrocarbon by type (n-alkane, iso-alkane, cyclo-alkane, aromatic)
-        # Based on group decompositions from Constantinou-Gani method
-        self.hc_type = np.array([""] * self.num_compounds, dtype=object)
+        self.groupDecompFile = gani.groupDecompFile
+        self.gcmTableFile = gani.gcmTableFile
+        self.Nij = gani.Nij
+        self.num_compounds = gani.num_compounds
+        self.num_groups = gani.num_groups
 
-        aromatics = 10  # starting index for aromatic groups
-        num_aromatics = 5
-        branching = 78  # starting index for branching groups (Group j (CH3)2CH through C(CH3)2C(CH3)2)
-        num_branching = 5  # groups 78-82 inclusive
-        cyclos = 83  # starting index for membered ring groups (3-7 membered rings)
-        num_cyclos = 5
-        olefins = 4  # starting index for double bound groups
-        num_olefins = 6
-
-        for i in range(self.num_compounds):
-            # Check if aromatic: does it contain AC's?
-            if sum(self.Nij[i, aromatics : aromatics + num_aromatics]) > 0:
-                self.fam[i] = 1
-                self.hc_type[i] = "aromatic"
-            # Check if cycloparaffin: does it contain rings?
-            elif sum(self.Nij[i, cyclos : cyclos + num_cyclos]) > 0:
-                self.fam[i] = 2
-                self.hc_type[i] = "cyclo-alkane"
-            # Check if olefin: does it contain double bonds?
-            elif sum(self.Nij[i, olefins : olefins + num_olefins]) > 0:
-                self.fam[i] = 3
-                self.hc_type[i] = "alkene"
-            # Check for branching groups (CH, C quaternary carbons)
-            elif sum(self.Nij[i, branching : branching + num_branching]) > 0:
-                self.hc_type[i] = "iso-alkane"
-            else:
-                # Only CH3 and CH2 -> n-alkane (linear)
-                self.hc_type[i] = "n-alkane"
-
-        # Calculate carbon and hydrogen numbers from first-order group decomposition
-        # For jet fuels, use only alkyl (0-3) and aromatic (10-14) groups
-        # Alkyl: CH3=1C,3H; CH2=1C,2H; CH=1C,1H; C=1C,0H
-        # Aromatic: ACH=1C,1H; AC=1C,0H; ACCH3=2C,3H; ACCH2=2C,2H; ACCH=2C,1H
-        alkyl_carbons = np.array([1, 1, 1, 1])  # groups 0-3
-        alkyl_hydrogens = np.array([3, 2, 1, 0])
-        # Olefinic: group 4 appears to represent 2 carbons with 3 hydrogens in UNIFAC-based system
-        olefinic_carbons = np.array([2, 1, 1, 0, 0, 0])  # groups 4-9
-        olefinic_hydrogens = np.array([3, 1, 0, 0, 0, 0])
-        aromatic_carbons = np.array([1, 1, 2, 2, 2])  # groups 10-14
-        aromatic_hydrogens = np.array([1, 0, 3, 2, 1])
-
-        self.nC = np.zeros(self.num_compounds, dtype=float)
-        self.nH = np.zeros(self.num_compounds, dtype=float)
-        for i in range(self.num_compounds):
-            # Alkyl contribution (groups 0-3)
-            self.nC[i] = np.dot(self.Nij[i, 0:4], alkyl_carbons)
-            self.nH[i] = np.dot(self.Nij[i, 0:4], alkyl_hydrogens)
-            # Olefinic contribution (groups 4-9)
-            self.nC[i] += np.dot(self.Nij[i, 4:10], olefinic_carbons)
-            self.nH[i] += np.dot(self.Nij[i, 4:10], olefinic_hydrogens)
-            # Aromatic contribution (groups 10-14)
-            self.nC[i] += np.dot(self.Nij[i, 10:15], aromatic_carbons)
-            self.nH[i] += np.dot(self.Nij[i, 10:15], aromatic_hydrogens)
+        # Critical/thermodynamic properties and hydrocarbon classification
+        # from Constantinou-Gani (num_compounds,)
+        self.MW = gani.MW
+        self.Tc = gani.Tc
+        self.Pc = gani.Pc
+        self.Vc = gani.Vc
+        self.Tb = gani.Tb
+        self.Tm = gani.Tm
+        self.Hf = gani.Hf
+        self.Gf = gani.Gf
+        self.Hv_stp = gani.Hv_stp
+        self.Lv_stp = gani.Lv_stp
+        self.Cp_stp = gani.Cp_stp
+        self.Cp_B = gani.Cp_B
+        self.Cp_C = gani.Cp_C
+        self.Vm_stp = gani.Vm_stp
+        self.omega = gani.omega
+        self.hc_type = gani.hc_type
+        self.fam = gani.fam
+        self.nC = gani.nC
+        self.nH = gani.nH
 
         # Read GCxGC/compound data
         df_gcxgc = pd.read_csv(self.gcxgcFile)
@@ -272,11 +252,11 @@ class fuel:
         self.Y_0 /= np.sum(self.Y_0)
 
         # Make sure mixture data is consistent:
-        if self.num_groups < self.N_g1:
+        if self.num_groups < gani.N_g1:
             raise ValueError(
                 f"Insufficient mixture description:\n"
                 f"The number of columns in {self.groupDecompFile} is less than "
-                f"the required number of first-order groups (N_g1 = {self.N_g1})."
+                f"the required number of first-order groups (N_g1 = {gani.N_g1})."
             )
         if self.Y_0.shape[0] != self.num_compounds:
             raise ValueError(
@@ -284,104 +264,6 @@ class fuel:
                 f"The number of compounds in {self.groupDecompFile} does not "
                 f"equal the number of compounds in {self.gcxgcFile}."
             )
-
-        # Read and store GCM table properties
-        df_table = pd.read_csv(self.gcmTableFile)
-        df_table = df_table.drop(columns=["Units"])
-
-        # Exclude non-numeric metadata rows (e.g. "order", "type") which describe
-        # each functional group rather than providing a numeric coefficient, and
-        # coerce the remaining coefficient columns to numeric. This is necessary
-        # because pandas infers dtype per-column: a metadata row's string values
-        # would otherwise force an entire column to object/string dtype.
-        metadata_properties = ["order", "type"]
-        df_table = df_table[~df_table["Property"].isin(metadata_properties)]
-        coefficient_columns = df_table.columns[1:]
-        df_table[coefficient_columns] = df_table[coefficient_columns].apply(
-            pd.to_numeric
-        )
-
-        def get_row(property_name):
-            """
-            Get property row from GCM table.
-
-            :param property_name: Name of the property to retrieve.
-            :type property_name: str
-            :return: Property values for all functional groups.
-            :rtype: np.ndarray
-            :raises ValueError: If property not found in GCM table.
-            """
-            row = df_table[df_table["Property"] == property_name]
-            if row.empty:
-                raise ValueError(f"Property '{property_name}' not found in GCM table.")
-            return row.iloc[:, 1:].to_numpy().flatten()
-
-        # Table data for functional groups (num_compounds,)
-        Tck = get_row("tck")  # critical temperature (1)
-        Pck = get_row("pck")  # critical pressure (bar)
-        Vck = get_row("vck")  # critical volume (m^3/kmol)
-        Tbk = get_row("tbk")  # boiling temperature (1)
-        Tmk = get_row("tmk")  # melting point temperature (1)
-        hfk = get_row("hfk")  # enthalpy of formation, (kJ/mol)
-        gfk = get_row("gfk")  # Gibbs energy (kJ/mol)
-        hvk = get_row("hvk")  # latent heat of vaporization (kJ/mol)
-        wk = get_row("wk")  # accentric factor (1)
-        Vmk = get_row("vmk")  # liquid molar volume fraction (m^3/kmol)
-        cpak = get_row("CpAk")  # specific heat values (J/mol/K)
-        cpbk = get_row("CpBk")  # specific heat values (J/mol/K)
-        cpck = get_row("CpCk")  # specific heat values (J/mol/K)
-        mwk = get_row("MW")  # molecular weights (g/mol)
-
-        # --- Compute critical properties at standard temp (num_compounds,)
-        # Molecular weights
-        self.MW = np.matmul(self.Nij, mwk)  # g/mol
-        self.MW *= 1e-3  # Convert to kg/mol
-
-        # T_c (critical temperature)
-        self.Tc = 181.128 * np.log(np.matmul(self.Nij, Tck))  # K
-
-        # p_c (critical pressure)
-        self.Pc = 1.3705 + (np.matmul(self.Nij, Pck) + 0.10022) ** (-2)  # bar
-        self.Pc *= 1e5  # Convert to Pa from bar
-
-        # V_c (critical volume)
-        self.Vc = -0.00435 + (np.matmul(self.Nij, Vck))  # m^3/kmol
-        self.Vc *= 1e-3  # Convert to m^3/mol
-
-        # T_b (boiling temperature)
-        self.Tb = 204.359 * np.log(np.matmul(self.Nij, Tbk))  # K
-
-        # T_m (melting temperature)
-        self.Tm = 102.425 * np.log(np.matmul(self.Nij, Tmk))  # K
-
-        # H_f (enthalpy of formation)
-        self.Hf = 10.835 + np.matmul(self.Nij, hfk)  # kJ/mol
-        self.Hf *= 1e3  # Convert to J/mol
-
-        # G_f (Gibbs free energy)
-        self.Gf = -14.828 + np.matmul(self.Nij, gfk)  # kJ/mol
-        self.Gf *= 1e3  # Convert to J/mol
-
-        # H_v,stp (enthalpy of vaporization at 298 K)
-        self.Hv_stp = 6.829 + (np.matmul(self.Nij, hvk))  # kJ/mol
-        self.Hv_stp *= 1e3  # Convert to J/mol
-
-        # omega (accentric factor)
-        self.omega = 0.4085 * np.log(np.matmul(self.Nij, wk) + 1.1507) ** (1.0 / 0.5050)
-
-        # V_m (molar liquid volume at 298 K)
-        self.Vm_stp = 0.01211 + np.matmul(self.Nij, Vmk)  # m^3/kmol
-        self.Vm_stp *= 1e-3  # Convert to m^3/mol
-
-        # C_p,stp (molar specific heat at 298 K)
-        self.Cp_stp = np.matmul(self.Nij, cpak) - 19.7779  # J/mol/K
-
-        # Temperature corrections for C_p
-        self.Cp_B = np.matmul(self.Nij, cpbk)
-        self.Cp_C = np.matmul(self.Nij, cpck)
-
-        # L_v,stp (latent heat of vaporization at 298 K)
-        self.Lv_stp = self.Hv_stp / self.MW  # J/kg
 
         # Lennard-Jones parameters for diffusion calculations (Tee et al. 1966)
         self.epsilonByKB = (0.7915 + 0.1693 * self.omega) * self.Tc  # K
